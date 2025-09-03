@@ -21,12 +21,14 @@ import {
   MessageTypeContainer,
   OfflineContainer,
   ErrorIcon,
+  CallerIdContainer,
 } from "./OutboundMessagePanel.Components";
 import SendMessageMenu from "./SendMessageMenu";
 import { onSendClickHandler, handleClose } from "./clickHandlers";
 import { templates } from "../../utils/templates";
 import { PhoneNumberUtil, AsYouTypeFormatter } from "google-libphonenumber";
 import { fetchContentTemplates } from "../../utils/fetchContentTemplates";
+import CallerIdSelector from "./CallerIdSelector";
 
 const isWorkerAvailable = (worker) => {
   const { taskrouter_offline_activity_sid } =
@@ -54,6 +56,12 @@ const OutboundMessagePanel = (props) => {
   const [messageType, setMessageType] = useState("sms");
   const [contentTemplateSid, setContentTemplateSid] = useState("");
   const [contentTemplates, setContentTemplates] = useState([]);
+
+  const [selectedCallerId, setSelectedCallerId] = useState("");
+  const [selectedCallerIdData, setSelectedCallerIdData] = useState(null);
+  const [isValidCallerId, setIsValidCallerId] = useState(false);
+  const [callerIdError, setCallerIdError] = useState(null);
+
   const useContentTemplates = process.env.FLEX_APP_USE_CONTENT_TEMPLATES
     ? process.env.FLEX_APP_USE_CONTENT_TEMPLATES.toLowerCase() === "true"
     : false;
@@ -68,21 +76,64 @@ const OutboundMessagePanel = (props) => {
   let disableSend = true;
   const toNumberValid = isToNumberValid(toNumber);
 
-  if (toNumberValid && messageBody.length) disableSend = false;
+  if (toNumberValid && messageBody.length && isValidCallerId) {
+    disableSend = false;
+  }
+
+  if (messageType === "whatsapp" && useContentTemplates) {
+    if (toNumberValid && contentTemplateSid && isValidCallerId) {
+      disableSend = false;
+    } else {
+      disableSend = true;
+    }
+  }
 
   let friendlyPhoneNumber = null;
   const formatter = new AsYouTypeFormatter();
   [...toNumber].forEach((c) => (friendlyPhoneNumber = formatter.inputDigit(c)));
 
+  const handleCallerIdChange = (callerId, numberData) => {
+    setSelectedCallerId(callerId);
+    setSelectedCallerIdData(numberData);
+  };
+
   const handleSendClicked = (menuItemClicked) => {
+    if (!selectedCallerId) {
+      console.error('No caller ID selected');
+      return;
+    }
+
     onSendClickHandler(
       menuItemClicked,
       toNumber,
       messageType,
       messageBody,
-      contentTemplateSid
+      contentTemplateSid,
+      selectedCallerId,
+      selectedCallerIdData
     );
   };
+
+  useEffect(() => {
+    if (selectedCallerId && selectedCallerIdData) {
+      if (messageType === "whatsapp" && selectedCallerIdData.type !== "whatsapp") {
+        setCallerIdError("Selected number does not support WhatsApp");
+        setIsValidCallerId(false);
+      } else if (messageType === "sms" && selectedCallerIdData.type !== "sms") {
+        setCallerIdError("Selected number does not support SMS");
+        setIsValidCallerId(false);
+      } else {
+        setCallerIdError(null);
+        setIsValidCallerId(true);
+      }
+    } else if (selectedCallerId) {
+      setIsValidCallerId(true);
+      setCallerIdError(null);
+    } else {
+      setIsValidCallerId(false);
+      setCallerIdError(null);
+    }
+  }, [selectedCallerId, selectedCallerIdData, messageType]);
 
   useEffect(() => {
     if (messageType === "whatsapp") {
@@ -94,11 +145,25 @@ const OutboundMessagePanel = (props) => {
       setContentTemplates([]);
       setContentTemplateSid("");
     }
+
+    if (selectedCallerIdData) {
+      if (messageType === "whatsapp" && selectedCallerIdData.type !== "whatsapp") {
+        setSelectedCallerId("");
+        setSelectedCallerIdData(null);
+      } else if (messageType === "sms" && selectedCallerIdData.type !== "sms") {
+        setSelectedCallerId("");
+        setSelectedCallerIdData(null);
+      }
+    }
   }, [messageType]);
 
   if (!isOutboundMessagePanelOpen) {
     if (toNumber !== "+1") setToNumber("+1");
     if (messageBody.length) setMessageBody("");
+    if (selectedCallerId) {
+      setSelectedCallerId("");
+      setSelectedCallerIdData(null);
+    }
     return null;
   }
 
@@ -146,6 +211,27 @@ const OutboundMessagePanel = (props) => {
               </Text>
             </MessageTypeContainer>
 
+            <CallerIdContainer theme={props.theme}>
+              {/* Caller ID Selector */}
+              <CallerIdSelector
+                selectedCallerId={selectedCallerId}
+                onCallerIdChange={handleCallerIdChange}
+                disabled={false}
+                messageType={messageType === "whatsapp" ? "whatsapp" : "sms"}
+                theme={props.theme}
+              />
+
+              {callerIdError && (
+                <Text
+                  color={props.theme.tokens.textColors.colorTextError}
+                  fontSize="fontSize20"
+                  marginBottom="space30"
+                >
+                  {callerIdError}
+                </Text>
+              )}
+            </CallerIdContainer> 
+            
             {/* Dialer */}
             <DialerContainer theme={props.theme}>
               <Dialer
@@ -198,7 +284,7 @@ const OutboundMessagePanel = (props) => {
                     value={messageBody}
                   />
 
-                  <Box backgroundColor="colorBackgroundBody" padding="space50">
+                  <Box backgroundColor="colorBackgroundBody">
                     <Separator
                       orientation="horizontal"
                       verticalSpacing="space50"
@@ -224,11 +310,7 @@ const OutboundMessagePanel = (props) => {
 
             <SendMessageContainer theme={props.theme}>
               <SendMessageMenu
-                disableSend={
-                  messageType === "whatsapp"
-                    ? !toNumberValid || !contentTemplateSid
-                    : !toNumberValid || !messageBody.length
-                }
+                disableSend={disableSend}
                 onClickHandler={handleSendClicked}
               />
             </SendMessageContainer>

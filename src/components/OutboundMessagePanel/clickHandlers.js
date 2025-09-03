@@ -8,14 +8,15 @@ export const onSendClickHandler = (
   toNumber,
   messageType,
   messageBody,
-  contentTemplateSid
+  contentTemplateSid,
+  selectedCallerId,
 ) => {
   let payload = {
     destination: messageType === "whatsapp" ? "whatsapp:" + toNumber : toNumber,
     callerId:
       messageType === "whatsapp"
-        ? "whatsapp:" + process.env.FLEX_APP_TWILIO_WHATSAPP_FROM_NUMBER
-        : process.env.FLEX_APP_TWILIO_FROM_NUMBER,
+        ? "whatsapp:" + selectedCallerId
+        : selectedCallerId,
     body: messageBody,
     contentTemplateSid,
     messageType,
