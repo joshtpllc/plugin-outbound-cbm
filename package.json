@@ -1,9 +1,10 @@
 {
-  "name": "outbound-cbm",
-  "version": "0.0.5",
+  "name": "outbound-cbm",   
+  "version": "2.1.0",
   "private": true,
   "scripts": {
-    "postinstall": "flex-plugin pre-script-check"
+    "postinstall": "flex-plugin pre-script-check",
+    "start:remote": "twilio flex:plugins:start --include-remote plugin-flex-ts-template-v2@remote"
   },
   "dependencies": {
     "@twilio-paste/core": "^17.0.1",

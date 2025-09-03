@@ -2,7 +2,7 @@ import styled from "@emotion/styled";
 import { SidePanel } from "@twilio/flex-ui";
 
 export const StyledSidePanel = styled(SidePanel)`
-  width: 276px;
+  width: 300px;
 `;
 
 export const Container = styled("div")`
@@ -17,7 +17,7 @@ export const DialerContainer = styled("div")`
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 276px;
+  width: 300px;
   padding: 0 ${(p) => p.theme.tokens.spacings.space50};
   box-sizing: border-box;
   opacity: ${({ disabled }) => disabled && 0.4};
@@ -30,10 +30,14 @@ export const MessageContainer = styled("div")`
 `;
 
 export const SendMessageContainer = styled("div")`
-  padding: ${(p) => p.theme.tokens.spacings.space50} 0;
+  padding: ${(p) => p.theme.tokens.spacings.space50};
 `;
 export const MessageTypeContainer = styled("div")`
   padding: ${(p) => p.theme.tokens.spacings.space50};
+`;
+
+export const CallerIdContainer = styled("div")`
+ padding: ${(p) => p.theme.tokens.spacings.space50};
 `;
 
 export const OfflineContainer = styled("div")`

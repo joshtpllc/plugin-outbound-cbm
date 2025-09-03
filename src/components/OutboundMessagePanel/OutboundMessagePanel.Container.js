@@ -21,6 +21,7 @@ import {
   MessageTypeContainer,
   OfflineContainer,
   ErrorIcon,
+  CallerIdContainer,
 } from "./OutboundMessagePanel.Components";
 import SendMessageMenu from "./SendMessageMenu";
 import { onSendClickHandler, handleClose } from "./clickHandlers";
@@ -210,25 +211,27 @@ const OutboundMessagePanel = (props) => {
               </Text>
             </MessageTypeContainer>
 
-            {/* Caller ID Selector */}
-            <CallerIdSelector
-              selectedCallerId={selectedCallerId}
-              onCallerIdChange={handleCallerIdChange}
-              disabled={false}
-              messageType={messageType === "whatsapp" ? "whatsapp" : "sms"}
-              theme={props.theme}
-            />
+            <CallerIdContainer theme={props.theme}>
+              {/* Caller ID Selector */}
+              <CallerIdSelector
+                selectedCallerId={selectedCallerId}
+                onCallerIdChange={handleCallerIdChange}
+                disabled={false}
+                messageType={messageType === "whatsapp" ? "whatsapp" : "sms"}
+                theme={props.theme}
+              />
 
-            {callerIdError && (
-              <Text
-                color={props.theme.tokens.textColors.colorTextError}
-                fontSize="fontSize20"
-                marginBottom="space30"
-              >
-                {callerIdError}
-              </Text>
-            )}
-
+              {callerIdError && (
+                <Text
+                  color={props.theme.tokens.textColors.colorTextError}
+                  fontSize="fontSize20"
+                  marginBottom="space30"
+                >
+                  {callerIdError}
+                </Text>
+              )}
+            </CallerIdContainer> 
+            
             {/* Dialer */}
             <DialerContainer theme={props.theme}>
               <Dialer
@@ -281,7 +284,7 @@ const OutboundMessagePanel = (props) => {
                     value={messageBody}
                   />
 
-                  <Box backgroundColor="colorBackgroundBody" padding="space50">
+                  <Box backgroundColor="colorBackgroundBody">
                     <Separator
                       orientation="horizontal"
                       verticalSpacing="space50"

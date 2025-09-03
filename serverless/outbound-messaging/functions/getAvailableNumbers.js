@@ -4,10 +4,22 @@ exports.handler = TokenValidator(async function (context, event, callback) {
   const client = context.getTwilioClient();
 
   const response = new Twilio.Response();
-  response.appendHeader('Access-Control-Allow-Origin', '*');
-  response.appendHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  response.appendHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Token');
-  response.appendHeader('Content-Type', 'application/json');
+  response.appendHeader("Access-Control-Allow-Origin", "*");
+  response.appendHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, OPTIONS, PUT, DELETE"
+  );
+  response.appendHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, Accept, X-Requested-With"
+  );
+  response.appendHeader("Access-Control-Max-Age", "3600");
+  response.appendHeader("Content-Type", "application/json");
+
+  if ((event.method || event.httpMethod || "").toUpperCase() === "OPTIONS") {
+    response.setStatusCode(200);
+    return callback(null, response);
+  }
 
   try {
     // Get phone numbers from the account

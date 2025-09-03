@@ -1,66 +1,43 @@
-import { Actions, Manager } from "@twilio/flex-ui";
+import { Actions } from "@twilio/flex-ui";
+export const handleClose = () => {
+  Actions.invokeAction("ToggleOutboundMessagePanel");
+};
 
 export const onSendClickHandler = (
   menuItemClicked,
   toNumber,
   messageType,
   messageBody,
-  contentTemplateSid = null,
-  selectedCallerId = null,
-  selectedCallerIdData = null
+  contentTemplateSid,
+  selectedCallerId,
 ) => {
-  console.log('Sending message with caller ID:', selectedCallerId);
-
-  if (!selectedCallerId) {
-    console.error('No caller ID selected');
-    return;
-  }
-
   let payload = {
-    destination: toNumber,
-    callerId: selectedCallerId,
-    callerIdData: selectedCallerIdData,
-    messageType: messageType,
+    destination: messageType === "whatsapp" ? "whatsapp:" + toNumber : toNumber,
+    callerId:
+      messageType === "whatsapp"
+        ? "whatsapp:" + selectedCallerId
+        : selectedCallerId,
+    body: messageBody,
+    contentTemplateSid,
+    messageType,
+    openChat: true,
+    routeToMe: true,
   };
 
-  if (messageType === "whatsapp" && contentTemplateSid) {
-    payload.contentTemplateSid = contentTemplateSid;
-    payload.body = "";
-  } else {
-    payload.body = messageBody;
-  }
-
+  // defer opening a task until customer replies
   switch (menuItemClicked) {
-    case "send-message-open-chat":
-      payload.openChat = true;
-      payload.routeToMe = true;
-      break;
-    case "send-message-route-to-me":
+    case "SEND_MESSAGE_REPLY_ME":
       payload.openChat = false;
       payload.routeToMe = true;
       break;
-    case "send-message-route-to-anyone":
+    case "SEND_MESSAGE":
       payload.openChat = false;
       payload.routeToMe = false;
       break;
     default:
-      payload.openChat = false;
-      payload.routeToMe = false;
+      break;
   }
 
-  console.log('SendOutboundMessage payload:', payload);
-
-  Actions.invokeAction("SendOutboundMessage", payload)
-    .then((result) => {
-      console.log('Message sent successfully:', result);
-      
-      Actions.invokeAction("ToggleOutboundMessagePanel");
-    })
-    .catch((error) => {
-      console.error('Error sending message:', error);
-    });
-};
-
-export const handleClose = () => {
+  Actions.invokeAction("SendOutboundMessage", payload);
   Actions.invokeAction("ToggleOutboundMessagePanel");
 };

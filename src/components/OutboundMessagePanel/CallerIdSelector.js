@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Flex, Select, Option, Label, Spinner, Text } from '@twilio-paste/core';
 import { Manager } from '@twilio/flex-ui';
+import { fetchAvailableNumbers } from '../../utils/fetchAvailableNumbers';
 
 const CallerIdSelector = ({
   selectedCallerId,
@@ -14,36 +15,15 @@ const CallerIdSelector = ({
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchAvailableNumbers();
+    fetchNumbers();
   }, []);
 
-  const fetchAvailableNumbers = async () => {
+  const fetchNumbers = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const manager = Manager.getInstance();
-      const token = manager.user.token;
-
-      const serverlessDomain = process.env.FLEX_APP_TWILIO_SERVERLESS_DOMAIN;
-
-      if (!serverlessDomain) {
-        throw new Error('FLEX_APP_TWILIO_SERVERLESS_DOMAIN not configured');
-      }
-
-      const response = await fetch(`${serverlessDomain}/getAvailableNumbers`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
+      const data = await fetchAvailableNumbers();
 
       if (!data.success) {
         throw new Error(data.error || 'Failed to fetch numbers');
@@ -55,13 +35,12 @@ const CallerIdSelector = ({
       } else if (messageType === 'whatsapp') {
         filteredNumbers = data.numbers.filter(num => num.type === 'whatsapp');
       }
-    
-      setAvailableNumbers(filteredNumbers);
 
+      setAvailableNumbers(filteredNumbers);
+      // Auto-select the first number if none is selected
       if (!selectedCallerId && filteredNumbers.length > 0) {
         onCallerIdChange(filteredNumbers[0].phoneNumber, filteredNumbers[0]);
       }
-
     } catch (err) {
       console.error('Error fetching available numbers:', err);
       setError(err.message);
@@ -70,14 +49,19 @@ const CallerIdSelector = ({
     }
   };
 
-  const handleSelectionChange = (value) => {
+  const handleSelectionChange = (event) => {
+    const value = event.target.value;
     const selectedNumber = availableNumbers.find(num => num.phoneNumber === value);
     onCallerIdChange(value, selectedNumber);
   };
 
   if (loading) {
     return (
-      <Flex vAlignContent="center" hAlignContent="left" marginBottom="space50">
+      <Flex
+        vAlignContent="center"
+        hAlignContent="left"
+        marginBottom="space50"
+      >
         <Spinner decorative size="sizeIcon20" />
         <Text marginLeft="space20" fontSize="fontSize20">
           Loading available numbers...
@@ -88,11 +72,12 @@ const CallerIdSelector = ({
 
   if (error) {
     return (
-      <div style={{ marginBottom: theme?.tokens?.spacings?.space50 || '1rem' }}>
+      <div>
         <Label htmlFor="caller-id-error">From Number</Label>
         <Text
-          color={theme?.tokens?.textColors?.colorTextError || 'red'}
-          fontSize="fontSize20"
+          color="colorTextError"
+          fontSize="fontSize30"
+          marginTop="space20"
         >
           Error: {error}
         </Text>
@@ -102,11 +87,12 @@ const CallerIdSelector = ({
 
   if (availableNumbers.length === 0) {
     return (
-      <div style={{ marginBottom: theme?.tokens?.spacings?.space50 || '1rem' }}>
+      <div>
         <Label htmlFor="caller-id-empty">From Number</Label>
         <Text
-          color={theme?.tokens?.textColors?.colorTextWeak || 'gray'}
-          fontSize="fontSize20"
+          color="colorTextWeak"
+          fontSize="fontSize30"
+          marginTop="space20"
         >
           No numbers available for {messageType} messaging
         </Text>
@@ -115,7 +101,9 @@ const CallerIdSelector = ({
   }
 
   return (
-    <div style={{ marginBottom: theme?.tokens?.spacings?.space50 || '1rem' }}>
+    <div style={{
+      marginBottom: theme?.tokens?.spacings?.space50 || '1rem'
+    }}>
       <Label htmlFor="caller-id-select">From Number</Label>
       <Select
         id="caller-id-select"
@@ -123,6 +111,9 @@ const CallerIdSelector = ({
         onChange={handleSelectionChange}
         disabled={disabled}
       >
+        {!selectedCallerId && (
+          <Option value="">Select a number</Option>
+        )}
         {availableNumbers.map((number) => (
           <Option key={number.sid} value={number.phoneNumber}>
             {number.friendlyName} ({number.phoneNumber})
